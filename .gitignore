@@ -1,0 +1,9 @@
+image.*
+.vetl*
+prefect.yaml
+
+encrypt.py
+deploy.py
+
+__pycache__
+database/__pycache__

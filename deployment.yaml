@@ -1,0 +1,12 @@
+deployments:
+  - name: sorecom-deployment
+    version: null
+    tags: []
+    description: "Déploiement régulier du pipeline SOFECOM"
+    schedule:
+      cron: "*/5 * * * *"  # toutes les 5 minutes
+    entrypoint: main.py:sorecom_pipeline
+    work_pool:
+      name: default-agent-pool
+      work_queue_name: default
+      job_variables: {}
