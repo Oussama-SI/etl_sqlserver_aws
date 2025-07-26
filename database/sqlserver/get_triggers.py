@@ -3,15 +3,7 @@ from pandas import DataFrame
 from pyodbc import connect, InternalError
 import datetime
 
-SQL_CONNECTION_STRING = (
-    "Driver={ODBC Driver 17 for SQL Server};"
-    "Server=localhost;"
-    "Database=SOFECOM;"
-    "Encrypt=yes;"
-    "TrustServerCertificate=yes;"
-    "UID=sa;"
-    "PWD=Allezmagne@2023"
-)
+SQL_CONNECTION_STRING = ()
 def get_connect():
     try:
         conn = connect(SQL_CONNECTION_STRING)
