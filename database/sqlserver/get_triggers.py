@@ -3,7 +3,15 @@ from pandas import DataFrame
 from pyodbc import connect, InternalError
 import datetime
 
-SQL_CONNECTION_STRING = ()
+SQL_CONNECTION_STRING = (
+    "Driver={ODBC Driver 17 for SQL Server};"
+    "Server=localhost;"
+    "Database=SOFECOM;"
+    "Encrypt=yes;"
+    "TrustServerCertificate=yes;"
+    "UID=sa;"
+    "PWD=Allezmagne@2023"
+)
 def get_connect():
     try:
         conn = connect(SQL_CONNECTION_STRING)
@@ -57,7 +65,7 @@ def query_as_dataframe(conn, query) -> DataFrame:
 
             return DataFrame(rows, columns=cols)
     
-print(query_as_dataframe(get_connect(), FAMILE_TRIGGER))
+# print(query_as_dataframe(get_connect(), FAMILE_TRIGGER))
 
 # for _, row in data.iterrows():
 #     try:
