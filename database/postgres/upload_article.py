@@ -1,5 +1,6 @@
 from pandas import read_excel, DataFrame
 from json import dumps
+from prefect import get_run_logger
 
 from .pg_connect import pg_connect, IntegrityError, Error, RealDictCursor, dt
 
@@ -49,6 +50,13 @@ CATEG ="""
     LIMIT 1
 """
 
+# data = [['AMM542','FB','OUSSAMA KI TESTER',1,10000,None,None,'insert','2025-07-23 10:05:31.163'],
+# ['AMM542','FB','TESTER',1,10000,None,None,'insert','2025-07-24 10:46:01.087'],
+# ['AAAAAA','FB','OUSSAMA',1,5000,None,None,'insert','2025-07-25 16:59:11.680']]
+# index = ['ART_CODE', 'FAR_CODE', 'ART_LIB', 'ART_DORT', 'ART_P_VTEB', 'ART_MEMO', 'ART_IMAGE', 'state', 'time']
+# df = DataFrame(data=data, columns=index)
+# print(df)
+# breakpoint()
 
 def dict_name(value : str):
     return dumps({
@@ -57,6 +65,7 @@ def dict_name(value : str):
     })
 
 def get_categ_id(conn, sql ,code) -> int:
+     log = get_run_logger()
      with conn.cursor(cursor_factory=RealDictCursor) as curs:
          try:
             curs.execute(sql, (code,))
@@ -67,25 +76,26 @@ def get_categ_id(conn, sql ,code) -> int:
             else:
                 raise ValueError(f"Aucune catégorie trouvée pour : {code}")
          except (Exception, IntegrityError) as e:
-            print("Erreur dans la détection de la catégorie spécifique pour l'article créé.")
-            raise e
+            log.exception(f'No categorie code found: {code}')
+            return None
 
 def upload_product(df : DataFrame):
+     log = get_run_logger()
      with pg_connect() as conn:
           start = dt.datetime.now()    
           with conn.cursor() as cur:
                for _, row in df.iterrows():
-                    if row['state'] == 'create':
-                         insert_product(row, conn, cur)
+                    if row['state'] == 'insert':
+                         insert_product(row, conn, cur, log)
                     if row['state'] == 'update':
-                         update_product(row, conn, cur)
+                         update_product(row, conn, cur, log)
                     if row['state'] == 'delete':
-                         delete_product(row, conn, cur)
+                         delete_product(row, conn, cur, log)
           return dt.datetime.now() - start
          
 # get_categ_id(CATEG, "V2")
 
-def insert_product(row, conn, cur):
+def insert_product(row, conn, cur, log):
                 try:
                     # === Insertion dans product_template ===
                     cur.execute(
@@ -93,7 +103,7 @@ def insert_product(row, conn, cur):
                         (
                             1,
                             dict_name(row["ART_LIB"]),                         # name
-                            get_categ_id(conn, CATEG, row['FAR_CODE']) or None,# categ_id
+                            get_categ_id(conn, CATEG, row['FAR_CODE']),# categ_id
                             1,                # uom_id
                             1,                # uom_po_id
                             2,                # create_uid
@@ -119,7 +129,7 @@ def insert_product(row, conn, cur):
                             dumps({"1": 2})          # responsible_id
                             )
                     )
-                    tmpl_id = cur.fetchone()[0]  # récupère l'id de product_template inséré
+                    tmpl_id = cur.fetchone()[0], cur.fetchone()
 
                     # === Insertion dans product_product ===
                     cur.execute(
@@ -135,16 +145,14 @@ def insert_product(row, conn, cur):
                             dt.datetime.now()
                         )
                     )
-                    print(f"{row} : successfully inserted product")
+                    # print(f"{row} : successfully inserted product")
                     # conn.commit()
 
                 except Exception as e:
                     conn.rollback()
-                    print(f"Error at row {row}: {e}")
-                    raise e
-
-    
-def update_product(row, conn, cur):
+                    log.error(f"Create error at row {row}")
+                    
+def update_product(row, conn, cur, log):
                 try:
                     # === Insertion dans product_template ===
                     cur.execute(
@@ -168,10 +176,10 @@ def update_product(row, conn, cur):
                     print(f"{row}: seccesfly updated")
                 except Exception as e:
                     conn.rollback()
-                    print(f"Error at row {row}: {e}")
-                    raise e
+                    # print(f"Error at row {row}: {e}")
+                    log.error(f"Upload erreur for : {row}")
 
-def delete_product(row, conn, cur):
+def delete_product(row, conn, cur, log):
                 try:
                     # === DELETE dans product_product et product_template ===
                     cur.execute(
@@ -185,5 +193,7 @@ def delete_product(row, conn, cur):
                     print(f"{row}: seccusfly deleted")
                 except Exception as e:
                     conn.rollback()
-                    print(f"Error at row {row}: {e}")
-                    raise e
+                    # print(f"Error at row {row}: {e}")
+                    log.error(f"Delete erreur for : {row}")
+                
+# print(upload_product(df))
