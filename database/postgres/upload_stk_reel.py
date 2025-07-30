@@ -29,7 +29,7 @@ def update_product_stk(df):
                          )
                     except (Exception, IntegrityError) as E:
                          conn.rollback()
-                         print(f"{_} : {E}")
+                         # print(f"{_} : {E}")
                          raise E 
                conn.commit()
 

@@ -1,5 +1,6 @@
 from pandas import read_excel, DataFrame
 import datetime as dt
+from prefect import get_run_logger
 
 from .pg_connect import pg_connect, Error
 
@@ -34,19 +35,20 @@ WRITE = """
 # print(conn)
 
 def upload_famile(df : DataFrame):
+     log = get_run_logger()
      with pg_connect() as conn:
           start = dt.datetime.now()    
           with conn.cursor() as cur:
                for _, row in df.iterrows():
-                    if row['state'] == 'create':
-                         insert_categorie(row, conn, cur)
+                    if row['state'] == 'insert':
+                         insert_categorie(row, conn, cur, log)
                     if row['state'] == 'update':
-                         update_categorie(row, conn, cur)
+                         update_categorie(row, conn, cur, log)
                     if row['state'] == 'delete':
-                         delete_categorie(row, conn, cur)
+                         delete_categorie(row, conn, cur, log)
           return dt.datetime.now() - start
 
-def insert_categorie(row, conn, cur):
+def insert_categorie(row, conn, cur, log):
      try:
           cur.execute(
           SQL,
@@ -60,18 +62,20 @@ def insert_categorie(row, conn, cur):
                "partial",
           )
           )
-          print(f" {row} : famille seccesfly created")
+          # print(f" {row} : famille seccesfly created")
      except Error as E:
           conn.rollback()
-          print(E)
+          log.exception(f"Can't insert a fammile : {row}")
+          # print(E)
      try:
           cur.execute(WRITE)
-          print("Updated parent_path for NULL rows")
+          # print("Updated parent_path for NULL rows")
      except Error as e:
           conn.rollback()
-          print("Error in UPDATE:", e)
+          log.exception(f"Can't update a path for categorie : {row}")
+          # print("Error in UPDATE:", e)
 
-def delete_categorie(row, conn , cur):
+def delete_categorie(row, conn , cur, log):
      try:
           cur.execute(
                DELETE,
@@ -80,12 +84,13 @@ def delete_categorie(row, conn , cur):
                row["FAR_LIB"]
                )
           )
-          print(f"{row}: seccesfly updated")
-     except Error as E:
+          # print(f"{row}: seccesfly updated")
+     except Error as e:
           conn.rollback()
-          print(E)
+          log.exception(f"Can't delete a fammile : {row} => {e}")
+          # print(E)
      
-def update_categorie(row, conn, cur):
+def update_categorie(row, conn, cur, log):
      try:
           cur.execute(
           UPDATE,
@@ -95,7 +100,8 @@ def update_categorie(row, conn, cur):
                row["FAR_CODE"],
           )
           )
-          print(f"{row}: seccefly deleted")
+          # print(f"{row}: seccefly deleted")
      except Error as E:
           conn.rollback()
-          print(E)
+          log.exception(f"Can't update a fammile : {row}")
+          # print(E)

@@ -70,7 +70,7 @@ def get_categ_id(conn, sql ,code) -> int:
          try:
             curs.execute(sql, (code,))
             result = curs.fetchone()
-            print(result['id'])
+            # print(result['id'])
             if result:
                 return result['id']
             else:
@@ -173,7 +173,7 @@ def update_product(row, conn, cur, log):
                             row["ART_CODE"],             # default_code
                         )
                     )
-                    print(f"{row}: seccesfly updated")
+                    # print(f"{row}: seccesfly updated")
                 except Exception as e:
                     conn.rollback()
                     # print(f"Error at row {row}: {e}")
@@ -184,13 +184,13 @@ def delete_product(row, conn, cur, log):
                     # === DELETE dans product_product et product_template ===
                     cur.execute(
                         DELETE_PRODUCT,
-                        (row['ART_CODE'])
+                        (row['ART_CODE'],)
                     )
                     cur.execute(
                         DELETE_TMP,
-                        (row['ART_CODE'])
+                        (row['ART_CODE'],)
                     )
-                    print(f"{row}: seccusfly deleted")
+                    # print(f"{row}: seccusfly deleted")
                 except Exception as e:
                     conn.rollback()
                     # print(f"Error at row {row}: {e}")
