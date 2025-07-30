@@ -8,6 +8,7 @@ from database.postgres import upload_article, upload_famille, upload_stk_reel
 from datetime import datetime, timedelta
 import pandas as pd
 
+
 def filter_recent_rows(df: pd.DataFrame, column: str = 'time', minutes: int = 5) -> pd.DataFrame:
     """
     Filtre les lignes dont la valeur dans `column` est dans les X dernières minutes.
@@ -47,7 +48,7 @@ def get_stock_changes():
 # @flow
 # def sorecom_pipeline():
 # #     if df is None or df.empty:
-# #         print(f"🔸 Aucun changement détecté pour {entity_name}")
+# #         print(f" Aucun changement détecté pour {entity_name}")
 # #         return
 #     logging = get_run_logger()
 #     time : datetime
@@ -78,7 +79,7 @@ def sorecom_pipeline():
     article_df = get_article_changes()
     stock_df = get_stock_changes()
 
-    if not famille_df.empty:
+    if famille_df is not None and not famille_df.empty:
         fam_duration = upload_famille.upload_famile(famille_df)
         total_durations.append(fam_duration)
         logger.info(f"Famille traitée en : {fam_duration}")
@@ -86,14 +87,14 @@ def sorecom_pipeline():
         logger.info("🔹 Aucun changement détecté pour Famille.")
 
 
-    if not article_df.empty:
+    if article_df is not None and not article_df.empty:
         art_duration = upload_article.upload_product(article_df)
         total_durations.append(art_duration)
         logger.info(f"Article traité en : {art_duration}")
     else:
         logger.info("🔹 Aucun changement détecté pour Articles.")
 
-    if not stock_df.empty:
+    if stock_df is not None and not stock_df.empty:
         stk_duration = upload_stk_reel.update_product_stk(stock_df)
         total_durations.append(stk_duration)
         logger.info(f"Stock traité en : {stk_duration}")
