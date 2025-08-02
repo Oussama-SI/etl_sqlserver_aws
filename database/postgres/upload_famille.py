@@ -8,22 +8,27 @@ __all__ = ['upload_famile']
 
 SQL = """
     INSERT INTO product_category
-    (create_uid,write_uid,name,complete_name,create_date,write_date,packaging_reserve_method)
-    values (%s,%s,%s,%s,%s,%s,%s)
+    (create_uid,write_uid,name,complete_name,create_date,write_date,packaging_reserve_method,active)
+    values (%s,%s,%s,%s,%s,%s,%s,%s)
 """
 UPDATE = """
      UPDATE product_category
-     SET complete_name = %s, write_date = %s
+     SET complete_name = %s, write_date = %s, active = %s
      WHERE name = %s
 """
 DELETE = """
      DELETE FROM product_category
      WHERE name = %s AND complete_name = %s
+     RETURNING id
 """
 WRITE = """
      UPDATE product_category
      SET parent_path = id::text || '/'
      WHERE parent_path IS NULL;
+"""
+
+CHECK_ART = """
+     select 1 from product_product
 """
 
 # with open("C:/Users/lenovo/Desktop/famile.xslx", "r") as file:
@@ -40,7 +45,7 @@ def upload_famile(df : DataFrame):
           start = dt.datetime.now()    
           with conn.cursor() as cur:
                for _, row in df.iterrows():
-                    if row['state'] == 'insert':
+                    if row['state'] == 'create':
                          insert_categorie(row, conn, cur, log)
                     if row['state'] == 'update':
                          update_categorie(row, conn, cur, log)
@@ -58,8 +63,9 @@ def insert_categorie(row, conn, cur, log):
                row["FAR_CODE"],
                row["FAR_LIB"],
                dt.datetime.now(),
-               dt.datetime.now(),
+               row["time"],
                "partial",
+               not bool(row["FAR_DORT"])
           )
           )
           # print(f" {row} : famille seccesfly created")
@@ -97,7 +103,8 @@ def update_categorie(row, conn, cur, log):
           (
                row["FAR_LIB"],
                row['time'],
-               row["FAR_CODE"],
+               not bool(row["FAR_DORT"]),
+               row["FAR_CODE"]
           )
           )
           # print(f"{row}: seccefly deleted")

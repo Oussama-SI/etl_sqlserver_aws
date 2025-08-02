@@ -1,36 +1,113 @@
-from .pg_connect import pg_connect, IntegrityError, dt
-from pandas import read_excel
+from .pg_connect import pg_connect, IntegrityError, dt, Error
+from prefect import get_run_logger
+from pandas import read_excel, DataFrame
 
 
-STK_REEL_SQL = """
-    UPDATE product_product
+INSERT_STK_SQL = """
+    INSERT INTO product_stock_agl (product_id, qty_available_agl,create_date,write_date, create_uid, write_uid)
+    VALUES (
+        COALESCE((SELECT id FROM product_product WHERE default_code = %s LIMIT 1), NULL),
+        %s,%s,%s,%s,%s
+    )
+"""
+
+UPDATE_STK_SQL = """
+    UPDATE product_stock_agl
     SET qty_available_agl = %s,
         write_date = %s
-    WHERE default_code = %s
+    WHERE id = (SELECT id FROM product_stock_agl WHERE default_code = %s
+    AND qty_available_agl = %s ORDER BY product_id DESC LIMIT 1)
+"""
+
+DELETE_STK_SQL = """
+    DELETE FROM product_stock_agl
+    WHERE id = (select id from product_stock_agl WHERE default_code = %s
+    AND qty_available_agl = %s LIMIT 1)
 """
 
 # conn = pg_connect()
 # df = read_excel("C:/Users/lenovo/Desktop/SOFECOM/table stock.xlsx")
 
-def update_product_stk(df):
-     with pg_connect() as conn:
-          start = dt.datetime.now()
-          with conn.cursor() as curs:
-               
-               for _, row in df.iterrows():
-                    try:
-                         curs.execute(
-                              STK_REEL_SQL,
-                              (
-                                   row['STK_REEL'],
-                                   row['time'],
-                                   row['ART_CODE']
-                              )
-                         )
-                    except (Exception, IntegrityError) as E:
-                         conn.rollback()
-                         # print(f"{_} : {E}")
-                         raise E 
-               conn.commit()
+def upload_stock(df: DataFrame):
+    log = get_run_logger()
+    with pg_connect() as conn:
+        start = dt.datetime.now()
+        with conn.cursor() as cur:
+            for _, row in df.iterrows():
+                state = row.get('state')
+                if state == 'insert':
+                    insert_stock(row, conn, cur, log)
+                elif state == 'update':
+                    update_stock(row, conn, cur, log)
+                elif state == 'delete':
+                    delete_stock(row, conn, cur, log)
+        return dt.datetime.now() - start
 
-          return dt.datetime.now() - start
+def insert_stock(row, conn, cur, log):
+    try:
+        cur.execute(
+            INSERT_STK_SQL,
+            (
+                row["ART_CODE"],
+                row["STK_REEL"],
+                row["time"],
+                dt.datetime.now(),
+                6,
+                6
+            )
+        )
+    except Error as e:
+        conn.rollback()
+        log.exception(f"Can't insert stock for: {row} -> {e}")
+
+def update_stock(row, conn, cur, log):
+    try:
+        cur.execute(
+            UPDATE_STK_SQL,
+            (
+                row["STK_REEL"],
+                # row["ART_CODE"],
+                row["time"],
+                row["ART_CODE"],
+                row["PREV_STK_REEL"]
+            )
+        )
+    except Error as e:
+        conn.rollback()
+        log.exception(f"Can't update stock for: {row} -> {e}")
+
+def delete_stock(row, conn, cur, log):
+    try:
+        cur.execute(
+            DELETE_STK_SQL,
+            (
+                row["ART_CODE"],
+                row["STK_REEL"]
+            )
+        )
+    except Error as e:
+        conn.rollback()
+        log.exception(f"Can't delete stock for: {row} -> {e}")
+
+# def update_product_stk(df):
+#      with pg_connect() as conn:
+#           start = dt.datetime.now()
+#           with conn.cursor() as curs:
+               
+#                for _, row in df.iterrows():
+#                     try:
+#                          curs.execute(
+#                               STK_REEL_SQL,
+#                               (
+#                                    row['STK_REEL'],
+#                                    row['time'],
+#                                    row['ART_CODE']
+#                               )
+#                          )
+#                     except (Exception, IntegrityError) as E:
+#                          conn.rollback()
+#                          # print(f"{_} : {E}")
+#                          raise E 
+#                conn.commit()
+
+#           return dt.datetime.now() - start

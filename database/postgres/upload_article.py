@@ -8,12 +8,12 @@ CREATE_TMP = """
     INSERT INTO product_template (
                     sequence, name, categ_id, uom_id, uom_po_id, create_uid, write_uid, type, service_tracking,
                     default_code, list_price, volume, weight, sale_ok, purchase_ok, active, can_image_1024_be_zoomed,
-                    has_configurable_attributes, is_favorite, create_date, write_date, sale_delay, tracking, is_storable,
-                    lot_valuated, responsible_id
+                    has_configurable_attributes, is_favorite, create_date, write_date, sale_delay, tracking, 
+                    is_storable,responsible_id
                 )
                 VALUES (
                     %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
                 )
                 RETURNING id
 """
@@ -30,13 +30,13 @@ DELETE_TMP = """
 CREATE_PRODUCT = """
                 INSERT INTO product_product (
                     product_tmpl_id,create_uid,write_uid,default_code,active,
-                    can_image_variant_1024_be_zoomed,write_date,create_date
+                    can_image_variant_1024_be_zoomed,write_date,create_date,agl_memo_url,image_hex
                 )
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """
 UPDATE_PRODUCT = """
     UPDATE product_product
-    SET active = %s
+    SET active = %s, agl_memo_url = %s, image_hex = %s
     WHERE default_code = %s
 """ #no
 DELETE_PRODUCT ="""
@@ -97,6 +97,11 @@ def upload_product(df : DataFrame):
 
 def insert_product(row, conn, cur, log):
                 try:
+                    cur.execute("SELECT id FROM product_product WHERE default_code = %s", (row["ART_CODE"],))
+                    existing = cur.fetchone()
+                    if existing:
+                        log.info(f"Product with code {row['ART_CODE']} already exists — skipping insert.")
+                        return
                     # === Insertion dans product_template ===
                     cur.execute(
                         CREATE_TMP,
@@ -106,8 +111,8 @@ def insert_product(row, conn, cur, log):
                             get_categ_id(conn, CATEG, row['FAR_CODE']),# categ_id
                             1,                # uom_id
                             1,                # uom_po_id
-                            2,                # create_uid
-                            2,                # write_uid
+                            6,                # create_uid
+                            6,                # write_uid
                             "consu",          # type
                             "no",             # service_tracking
                             row["ART_CODE"],  # default_code
@@ -125,24 +130,25 @@ def insert_product(row, conn, cur, log):
                             0,                # sale_delay
                             "none",           # tracking
                             True,             # is_storable
-                            False,            # lot_valuated
                             dumps({"1": 2})          # responsible_id
                             )
                     )
-                    tmpl_id = cur.fetchone()[0], cur.fetchone()
+                    tmpl_id = cur.fetchone()[0]
 
                     # === Insertion dans product_product ===
                     cur.execute(
                         CREATE_PRODUCT,
                         (
                             tmpl_id,
-                            1,  # create_uid
-                            1,  # write_uid
+                            6,  # create_uid
+                            6,  # write_uid
                             row["ART_CODE"],
                             not bool(row["ART_DORT"]),
                             False,
                             dt.datetime.now(),
-                            dt.datetime.now()
+                            dt.datetime.now(),
+                            row["ART_MEMO"] or None,
+                            row["ART_IMAGE"] or None
                         )
                     )
                     # print(f"{row} : successfully inserted product")
@@ -150,7 +156,7 @@ def insert_product(row, conn, cur, log):
 
                 except Exception as e:
                     conn.rollback()
-                    log.error(f"Create error at row {row}")
+                    log.error(f"Create error at row {row} : {e}")
                     
 def update_product(row, conn, cur, log):
                 try:
@@ -162,7 +168,7 @@ def update_product(row, conn, cur, log):
                             get_categ_id(conn, CATEG, row['FAR_CODE']) or None,# categ_id
                             row["ART_P_VTEB"],           # list_price
                             row['time'],                 # write_date
-                            not bool(row["ART_DORT"]),   # active
+                            not bool(row["ART_DORT"]),   # activ
                             row["ART_CODE"],             # default_code
                         )
                     )
@@ -170,6 +176,8 @@ def update_product(row, conn, cur, log):
                         UPDATE_PRODUCT,
                         (
                             not bool(row["ART_DORT"]),   # active
+                            row["ART_MEMO"] or None,
+                            row["ART_IMAGE"] or None,
                             row["ART_CODE"],             # default_code
                         )
                     )

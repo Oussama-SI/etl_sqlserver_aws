@@ -1,6 +1,7 @@
 import os
-from pandas import DataFrame
+from pandas import DataFrame, read_csv, isna, read_excel
 from pyodbc import connect, InternalError
+from prefect import get_run_logger
 import datetime
 
 SQL_CONNECTION_STRING = (
@@ -14,12 +15,14 @@ SQL_CONNECTION_STRING = (
 )
 def get_connect():
     try:
-        conn = connect(SQL_CONNECTION_STRING)
+        conn = connect(SQL_CONNECTION_STRING, autocommit=True)
         return conn
     except InternalError as e:
-        raise e
+        get_run_logger().info("Internal error in connecytion with sql server")
+        return None
     except Exception as e:
-        print("Connection Error:", e)
+        get_run_logger().exception(f"Connection Error: {e}")
+        return None
     
 
 # data = pd.read_excel("C:/Users/lenovo/Desktop/SOFECOM/table articles.xlsx")
@@ -29,19 +32,6 @@ FAMILE_TRIGGER = "SELECT * FROM trigger_famile;"
 ARTICLE_TRIGGER = "SELECT * FROM trigger_articles"
 STOCK_TRIGGER = "SELECT * FROM trigger_stock"
 
-SQL = """
-    INSERT INTO SOFECOM.dbo.ARTICLES (ART_CODE,FAR_CODE,ART_LIB,ART_DORT,ART_P_VTEB,ART_MEMO,ART_IMAGE)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-"""
-
-# def get_famile_trigger():
-#     with conn.cursor() as cur:
-#         cur.execute(FAMILE_TRIGGER)
-#         recs = cur.fetchall()
-#         cols = [column[0] for column in cur.description]
-#         # for r in recs:
-#         #     print(r)
-#     return pd.DataFrame(recs, columns=cols)
 
 def query_as_dataframe(conn, query) -> DataFrame:
     """
@@ -64,32 +54,3 @@ def query_as_dataframe(conn, query) -> DataFrame:
             rows = [list(row) for row in rowse]
 
             return DataFrame(rows, columns=cols)
-    
-# print(query_as_dataframe(get_connect(), FAMILE_TRIGGER))
-
-# for _, row in data.iterrows():
-#     try:
-#         cur.execute(
-#             SQL,
-#             (
-#                row['ART_CODE'],
-#                 row['FAR_CODE'],
-#                 row['ART_LIB'],
-#                 int(row['ART_DORT']) if not pd.isna(row['ART_DORT']) else None,
-#                 float(row['ART_P_VTEB']) if not pd.isna(row['ART_P_VTEB']) else None,
-#                 #row['ART_MEMO'] if not pd.isna(row['ART_MEMO']) else None,
-#                 None,
-#                 None
-#             )
-#         )
-#     except Exception as e:
-#         print(f"Insert failed for row {_}: {e}")
-
-# try:
-#     conn.commit()
-# except Exception as e:
-#     print("Commit failed:", e)
-
-# cur.close()
-# conn.close()
-# print("Duration:", datetime.datetime.now() - start_time)
