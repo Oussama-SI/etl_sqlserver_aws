@@ -68,7 +68,7 @@ def insert_categorie(row, conn, cur, log):
                row["FAR_CODE"],
                row["FAR_LIB"],
                row["time"],
-               dt.datetime.now(),
+               row["time"],
                "partial",
                not bool(row["FAR_DORT"])
           )

@@ -56,7 +56,7 @@ def insert_stock(row, conn, cur, log):
                 row["ART_CODE"],
                 row["STK_REEL"],
                 row["time"],
-                dt.datetime.now(),
+                row["time"],
                 6,
                 6,
                 row["ART_CODE"]

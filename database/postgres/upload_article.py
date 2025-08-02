@@ -125,8 +125,8 @@ def insert_product(row, conn, cur, log):
                             False,            # can_image_1024_be_zoomed
                             False,            # has_configurable_attributes
                             False,            # is_favorite
-                            row['time'],# create_date
-                            row['time'],# write_date
+                            row['time'],      # create_date
+                            dt.datetime.now(),# write_date
                             0,                # sale_delay
                             "none",           # tracking
                             True,             # is_storable
@@ -145,8 +145,8 @@ def insert_product(row, conn, cur, log):
                             row["ART_CODE"],
                             not bool(row["ART_DORT"]),
                             False,
-                            dt.datetime.now(),
-                            dt.datetime.now(),
+                            row["time"],
+                            row["time"],
                             row["ART_MEMO"] or None,
                             row["ART_IMAGE"] or None
                         )
@@ -160,6 +160,11 @@ def insert_product(row, conn, cur, log):
                     
 def update_product(row, conn, cur, log):
                 try:
+                    cur.execute("SELECT id FROM product_product WHERE write_date = %s", (row["time"],))
+                    existing = cur.fetchone()
+                    if existing:
+                        log.info(f"Product with code {row['ART_CODE']} already exists — skipping insert.")
+                        return
                     # === Insertion dans product_template ===
                     cur.execute(
                         UPDATE_TMP,
