@@ -55,6 +55,11 @@ def upload_famile(df : DataFrame):
 
 def insert_categorie(row, conn, cur, log):
      try:
+          cur.execute("SELECT id FROM product_category WHERE name = %s", (row["FAR_CODE"],))
+          existing = cur.fetchone()
+          if existing:
+               log.info(f"Product with code {row['FAR_CODE']} already exists — skipping insert.")
+               return
           cur.execute(
           SQL,
           (
@@ -62,8 +67,8 @@ def insert_categorie(row, conn, cur, log):
                2,
                row["FAR_CODE"],
                row["FAR_LIB"],
-               dt.datetime.now(),
                row["time"],
+               dt.datetime.now(),
                "partial",
                not bool(row["FAR_DORT"])
           )
@@ -98,6 +103,11 @@ def delete_categorie(row, conn , cur, log):
      
 def update_categorie(row, conn, cur, log):
      try:
+          cur.execute("SELECT id FROM product_category WHERE write_date = %s", (row["time"]))
+          existing = cur.fetchone()
+          if existing:
+              log.info(f"Product Category with code {row['ART_CODE']} already exists — skipping update.")
+              return
           cur.execute(
           UPDATE,
           (

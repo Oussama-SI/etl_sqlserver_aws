@@ -4,10 +4,10 @@ from pandas import read_excel, DataFrame
 
 
 INSERT_STK_SQL = """
-    INSERT INTO product_stock_agl (product_id, qty_available_agl,create_date,write_date, create_uid, write_uid)
+    INSERT INTO product_stock_agl (product_id, qty_available_agl,create_date,write_date, create_uid, write_uid, default_code)
     VALUES (
         COALESCE((SELECT id FROM product_product WHERE default_code = %s LIMIT 1), NULL),
-        %s,%s,%s,%s,%s
+        %s,%s,%s,%s,%s,%s
     )
 """
 
@@ -45,6 +45,11 @@ def upload_stock(df: DataFrame):
 
 def insert_stock(row, conn, cur, log):
     try:
+        cur.execute("SELECT id FROM product_stock_agl WHERE default_code = %s AND create_date = %s", (row["ART_CODE"], row["time"]))
+        existing = cur.fetchone()
+        if existing:
+            log.info(f"Stock Product with code {row['ART_CODE']} already exists — skipping insert.")
+            return
         cur.execute(
             INSERT_STK_SQL,
             (
@@ -53,7 +58,8 @@ def insert_stock(row, conn, cur, log):
                 row["time"],
                 dt.datetime.now(),
                 6,
-                6
+                6,
+                row["ART_CODE"]
             )
         )
     except Error as e:
@@ -62,6 +68,11 @@ def insert_stock(row, conn, cur, log):
 
 def update_stock(row, conn, cur, log):
     try:
+        cur.execute("SELECT id FROM product_stock_agl WHERE write_date = %s", (row["time"],))
+        existing = cur.fetchone()
+        if existing:
+            log.info(f"Stock Product with code {row['ART_CODE']} already exists — skipping write.")
+            return
         cur.execute(
             UPDATE_STK_SQL,
             (
@@ -69,7 +80,7 @@ def update_stock(row, conn, cur, log):
                 # row["ART_CODE"],
                 row["time"],
                 row["ART_CODE"],
-                row["PREV_STK_REEL"]
+                row["PREV_STK_REEL"],
             )
         )
     except Error as e:
