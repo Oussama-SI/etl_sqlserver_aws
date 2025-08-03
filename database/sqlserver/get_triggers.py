@@ -28,9 +28,9 @@ def get_connect():
 # data = pd.read_excel("C:/Users/lenovo/Desktop/SOFECOM/table articles.xlsx")
 # print(data.loc[283, 'ART_IMAGE'])
 
-FAMILE_TRIGGER = "SELECT * FROM trigger_famile;"
-ARTICLE_TRIGGER = "SELECT * FROM trigger_articles"
-STOCK_TRIGGER = "SELECT * FROM trigger_stock"
+FAMILE_TRIGGER = "SELECT * FROM trigger_famile order by time desc"
+ARTICLE_TRIGGER = "SELECT * FROM trigger_articles order by time desc"
+STOCK_TRIGGER = "SELECT * FROM trigger_stock order by time desc"
 
 
 def query_as_dataframe(conn, query) -> DataFrame:
