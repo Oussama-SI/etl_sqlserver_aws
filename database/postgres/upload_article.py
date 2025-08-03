@@ -19,9 +19,9 @@ CREATE_TMP = """
 """
 UPDATE_TMP = """
     UPDATE product_template
-    SET name = %s, categ_id = %s, lst_price = %s, write_date = %s, active = %s
+    SET name = %s, categ_id = %s, list_price = %s, write_date = %s, active = %s
     WHERE default_code = %s
-""" #no
+"""
 DELETE_TMP = """
     DELETE FROM product_template
     WHERE default_code = %s
@@ -190,10 +190,19 @@ def update_product(row, conn, cur, log):
                 except Exception as e:
                     conn.rollback()
                     # print(f"Error at row {row}: {e}")
-                    log.error(f"Upload erreur for : {row}")
+                    log.error(f"Upload erreur for : {row} = {e}")
 
 def delete_product(row, conn, cur, log):
                 try:
+                    cur.execute("SELECT id FROM product_product WHERE code = %s", (row["ART_CODE"],))
+                    result = cur.fetchone()
+                    if result:
+                        product_id = result[0]
+                        cur.execute("""
+                            UPDATE product_stock_agl
+                            SET product_id = NULL
+                            WHERE product_id = %s
+                        """, (product_id,))
                     # === DELETE dans product_product et product_template ===
                     cur.execute(
                         DELETE_PRODUCT,
@@ -207,6 +216,6 @@ def delete_product(row, conn, cur, log):
                 except Exception as e:
                     conn.rollback()
                     # print(f"Error at row {row}: {e}")
-                    log.error(f"Delete erreur for : {row}")
+                    log.error(f"Delete erreur for : {row} = {e}")
                 
 # print(upload_product(df))

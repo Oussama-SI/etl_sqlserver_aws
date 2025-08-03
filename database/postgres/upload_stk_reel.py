@@ -64,7 +64,7 @@ def insert_stock(row, conn, cur, log):
         )
     except Error as e:
         conn.rollback()
-        log.exception(f"Can't insert stock for: {row} -> {e}")
+        log.error(f"Can't insert stock for: {row} -> {e}")
 
 def update_stock(row, conn, cur, log):
     try:
@@ -80,12 +80,12 @@ def update_stock(row, conn, cur, log):
                 # row["ART_CODE"],
                 row["time"],
                 row["ART_CODE"],
-                row["PREV_STK_REEL"],
+                row["PAST_STK_RREL"],
             )
         )
     except Error as e:
         conn.rollback()
-        log.exception(f"Can't update stock for: {row} -> {e}")
+        log.error(f"Can't update stock for: {row} -> {e}")
 
 def delete_stock(row, conn, cur, log):
     try:
@@ -98,7 +98,7 @@ def delete_stock(row, conn, cur, log):
         )
     except Error as e:
         conn.rollback()
-        log.exception(f"Can't delete stock for: {row} -> {e}")
+        log.error(f"Can't delete stock for: {row} -> {e}")
 
 # def update_product_stk(df):
 #      with pg_connect() as conn:

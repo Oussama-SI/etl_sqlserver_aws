@@ -58,7 +58,7 @@ def insert_categorie(row, conn, cur, log):
           cur.execute("SELECT id FROM product_category WHERE name = %s", (row["FAR_CODE"],))
           existing = cur.fetchone()
           if existing:
-               log.info(f"Product with code {row['FAR_CODE']} already exists — skipping insert.")
+               log.info(f"Famile with code {row['FAR_CODE']} already exists — skipping insert.")
                return
           cur.execute(
           SQL,
@@ -74,20 +74,32 @@ def insert_categorie(row, conn, cur, log):
           )
           )
           # print(f" {row} : famille seccesfly created")
-     except Error as E:
+     except Error as e:
           conn.rollback()
-          log.exception(f"Can't insert a fammile : {row}")
+          log.error(f"Can't insert a fammile : {row} = {e}")
           # print(E)
      try:
           cur.execute(WRITE)
           # print("Updated parent_path for NULL rows")
      except Error as e:
           conn.rollback()
-          log.exception(f"Can't update a path for categorie : {row}")
+          log.error(f"Can't update a path for categorie : {row} = {e}")
           # print("Error in UPDATE:", e)
 
 def delete_categorie(row, conn , cur, log):
      try:
+          cur.execute("SELECT id FROM product_category WHERE code = %s AND name = %s", (
+            row["FAR_CODE"], row["FAR_LIB"]
+          ))
+          result = cur.fetchone()
+          if result:
+               category_id = result[0]
+               cur.execute("""
+                    UPDATE product_template
+                    SET categ_id = NULL
+                    WHERE categ_id = %s
+               """, (category_id,))
+          
           cur.execute(
                DELETE,
                (
@@ -95,15 +107,13 @@ def delete_categorie(row, conn , cur, log):
                row["FAR_LIB"]
                )
           )
-          # print(f"{row}: seccesfly updated")
      except Error as e:
           conn.rollback()
-          log.exception(f"Can't delete a fammile : {row} => {e}")
-          # print(E)
+          log.error(f"Can't delete a fammile : {row} = {e}")
      
 def update_categorie(row, conn, cur, log):
      try:
-          cur.execute("SELECT id FROM product_category WHERE write_date = %s", (row["time"]))
+          cur.execute("SELECT id FROM product_category WHERE write_date = %s", (row["time"],))
           existing = cur.fetchone()
           if existing:
               log.info(f"Product Category with code {row['ART_CODE']} already exists — skipping update.")
@@ -118,7 +128,7 @@ def update_categorie(row, conn, cur, log):
           )
           )
           # print(f"{row}: seccefly deleted")
-     except Error as E:
+     except Error as e:
           conn.rollback()
-          log.exception(f"Can't update a fammile : {row}")
+          log.error(f"Can't update a fammile : {row} = {e}")
           # print(E)
