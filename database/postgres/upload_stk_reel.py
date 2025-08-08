@@ -14,19 +14,20 @@ INSERT_STK_SQL = """
 UPDATE_STK_SQL = """
     UPDATE product_stock_agl
     SET qty_available_agl = %s,
-        write_date = %s
+        write_date = %s,
+        product_id = COALESCE((SELECT id FROM product_product WHERE default_code = %s LIMIT 1), NULL)
     WHERE id = (SELECT id FROM product_stock_agl WHERE default_code = %s
     AND qty_available_agl = %s ORDER BY product_id DESC LIMIT 1)
 """
 
 DELETE_STK_SQL = """
     DELETE FROM product_stock_agl
-    WHERE id = (select id from product_stock_agl WHERE default_code = %s
-    AND qty_available_agl = %s LIMIT 1)
+    WHERE id = (
+        SELECT id FROM product_stock_agl
+        WHERE default_code = %s AND qty_available_agl = %s
+        ORDER BY product_id DESC LIMIT 1)
 """
 
-# conn = pg_connect()
-# df = read_excel("C:/Users/lenovo/Desktop/SOFECOM/table stock.xlsx")
 
 def upload_stock(df: DataFrame):
     log = get_run_logger()
@@ -80,7 +81,8 @@ def update_stock(row, conn, cur, log):
                 # row["ART_CODE"],
                 row["time"],
                 row["ART_CODE"],
-                row["PAST_STK_RREL"],
+                row["ART_CODE"],
+                row["PAST_STK_REEL"],
             )
         )
     except Error as e:
@@ -99,26 +101,3 @@ def delete_stock(row, conn, cur, log):
     except Error as e:
         conn.rollback()
         log.error(f"Can't delete stock for: {row} -> {e}")
-
-# def update_product_stk(df):
-#      with pg_connect() as conn:
-#           start = dt.datetime.now()
-#           with conn.cursor() as curs:
-               
-#                for _, row in df.iterrows():
-#                     try:
-#                          curs.execute(
-#                               STK_REEL_SQL,
-#                               (
-#                                    row['STK_REEL'],
-#                                    row['time'],
-#                                    row['ART_CODE']
-#                               )
-#                          )
-#                     except (Exception, IntegrityError) as E:
-#                          conn.rollback()
-#                          # print(f"{_} : {E}")
-#                          raise E 
-#                conn.commit()
-
-#           return dt.datetime.now() - start

@@ -2,7 +2,13 @@ from pandas import read_excel, DataFrame
 from json import dumps
 from prefect import get_run_logger
 
-from .pg_connect import pg_connect, IntegrityError, Error, RealDictCursor, dt
+from .pg_connect import (
+    pg_connect, 
+    IntegrityError, 
+    Error, 
+    RealDictCursor, 
+    dt
+)
 
 CREATE_TMP = """
     INSERT INTO product_template (
@@ -50,13 +56,6 @@ CATEG ="""
     LIMIT 1
 """
 
-# data = [['AMM542','FB','OUSSAMA KI TESTER',1,10000,None,None,'insert','2025-07-23 10:05:31.163'],
-# ['AMM542','FB','TESTER',1,10000,None,None,'insert','2025-07-24 10:46:01.087'],
-# ['AAAAAA','FB','OUSSAMA',1,5000,None,None,'insert','2025-07-25 16:59:11.680']]
-# index = ['ART_CODE', 'FAR_CODE', 'ART_LIB', 'ART_DORT', 'ART_P_VTEB', 'ART_MEMO', 'ART_IMAGE', 'state', 'time']
-# df = DataFrame(data=data, columns=index)
-# print(df)
-# breakpoint()
 
 def dict_name(value : str):
     return dumps({
@@ -194,7 +193,7 @@ def update_product(row, conn, cur, log):
 
 def delete_product(row, conn, cur, log):
                 try:
-                    cur.execute("SELECT id FROM product_product WHERE code = %s", (row["ART_CODE"],))
+                    cur.execute("SELECT id FROM product_product WHERE default_code = %s", (row["ART_CODE"],))
                     result = cur.fetchone()
                     if result:
                         product_id = result[0]
@@ -217,5 +216,3 @@ def delete_product(row, conn, cur, log):
                     conn.rollback()
                     # print(f"Error at row {row}: {e}")
                     log.error(f"Delete erreur for : {row} = {e}")
-                
-# print(upload_product(df))

@@ -3,7 +3,8 @@ from psycopg2.extras import RealDictCursor
 import datetime as dt
 from prefect import get_run_logger
 
-PG_CONNECT = "host='16.171.170.66' port='5432' dbname='SORECOM' user='sorecom' password='sorecom_aws_2025'"
+PG_CONNECT = "host='' port='' dbname='' user='' password=''"
+# ùPG_CONNECT = "dbname='SORECOM' user='openpg' password='openpgpwd'"
 
 def pg_connect():
      try:

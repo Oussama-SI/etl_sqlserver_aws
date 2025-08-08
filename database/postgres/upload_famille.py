@@ -31,13 +31,6 @@ CHECK_ART = """
      select 1 from product_product
 """
 
-# with open("C:/Users/lenovo/Desktop/famile.xslx", "r") as file:
-#      data = file.read()
-# "parent_id""create_uid""write_uid""name""complete_name""parent_path""create_date""write_date"
-# "packaging_reserve_method"
-# df = read_excel("C:/Users/lenovo/Desktop/famille.xlsx")
-#print(df)
-# print(conn)
 
 def upload_famile(df : DataFrame):
      log = get_run_logger()
@@ -88,15 +81,15 @@ def insert_categorie(row, conn, cur, log):
 
 def delete_categorie(row, conn , cur, log):
      try:
-          cur.execute("SELECT id FROM product_category WHERE code = %s AND name = %s", (
-            row["FAR_CODE"], row["FAR_LIB"]
+          cur.execute("SELECT id FROM product_category WHERE name = %s", (
+            row["FAR_CODE"],
           ))
           result = cur.fetchone()
           if result:
                category_id = result[0]
                cur.execute("""
                     UPDATE product_template
-                    SET categ_id = NULL
+                    SET categ_id = 1
                     WHERE categ_id = %s
                """, (category_id,))
           
