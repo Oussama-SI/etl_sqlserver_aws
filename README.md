@@ -69,6 +69,10 @@ prefect init # Va créer un fichie de configuration "prefect.yaml"
 **Ensuite, modifiez le fichier `prefect.yaml` avec les paramètres suivants :**
 
 ```yaml
+# Welcome to your prefect.yaml file! You can use this file for storing and managing
+# configuration for deploying your flows. We recommend committing this file to source
+# control along with your flow code.
+
 # Generic metadata about this project
 name: etl_sqlserver_aws
 prefect-version: 3.4.10
@@ -82,18 +86,33 @@ push: null
 # pull section allows you to provide instructions for cloning this project in remote locations
 pull:
   - prefect.deployments.steps.set_working_directory:
-      directory: C:\Users\lenovo\Documents\etl_sofecom\etl_sqlserver_aws
+      directory: PATH\TO\..\etl_sqlserver_aws
 
 # the deployments section allows you to provide configuration for deploying flows
-deployments:
+deployments: # can runs manually, via schedule, API, Throught an automation
   - name: sorecom-deployment
     version: null
     tags: []
     description: "Déploiement régulier du pipeline SORECOM"
     schedule:
-      cron: "*/5 * * * *" # 5 min, tu peux utilise votre propre schedule
+      cron: "*/10 * * * *"
     flow_name: sorecom_pipeline
     entrypoint: main.py:sorecom_pipeline
+    parameters: {}
+    work_pool:
+      name: default-agent-pool
+      work_queue_name: default
+      job_variables: {}
+
+  - name: cleanup-triggers-monthly
+    version: null
+    tags: ["maintenance", "monthly"]
+    description: "Nettoyage mensuel des tables de triggers (garde 20 dernieres lignes)"
+    schedule:
+      cron: "0 0 1 * *" # Chaque 1er du mois à 00:00
+      timezone: "Etc/UTC"
+    flow_name: cleanup_triggers_flow
+    entrypoint: main.py:cleanup_triggers_flow
     parameters: {}
     work_pool:
       name: default-agent-pool
