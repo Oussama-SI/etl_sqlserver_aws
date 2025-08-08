@@ -1,11 +1,11 @@
-image.*
+image*
 .vetl*
 prefect.yaml
 
 ssh_key*
 
 encrypt.py
-deploy.py
+deploy*
 
 __pycache__
-database/__pycache__
+database/__pycache__image1.txt
