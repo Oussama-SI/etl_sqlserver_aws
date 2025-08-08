@@ -5,13 +5,13 @@ from prefect import get_run_logger
 import datetime
 
 SQL_CONNECTION_STRING = (
-    "Driver={ODBC Driver 17 for SQL Server};"
-    "Server=localhost;"
-    "Database=SOFECOM;"
+    "Driver={SQL Server};"
+    "Server=;"
+    "Database=;"
     "Encrypt=yes;"
     "TrustServerCertificate=yes;"
-    "UID=sa;"
-    "PWD=Allezmagne@2023"
+    "UID=;"
+    "PWD="
 )
 def get_connect():
     try:
@@ -23,14 +23,12 @@ def get_connect():
     except Exception as e:
         get_run_logger().exception(f"Connection Error: {e}")
         return None
-    
 
-# data = pd.read_excel("C:/Users/lenovo/Desktop/SOFECOM/table articles.xlsx")
-# print(data.loc[283, 'ART_IMAGE'])
 
-FAMILE_TRIGGER = "SELECT * FROM trigger_famile order by time desc"
-ARTICLE_TRIGGER = "SELECT * FROM trigger_articles order by time desc"
-STOCK_TRIGGER = "SELECT * FROM trigger_stock order by time desc"
+FAMILE_TRIGGER = "SELECT * FROM dbo.trigger_famile order by time"
+ARTICLE_TRIGGER = "SELECT * FROM dbo.trigger_articles order by time"
+STOCK_TRIGGER = "SELECT * FROM dbo.trigger_stock order by time"
+
 
 
 def query_as_dataframe(conn, query) -> DataFrame:
@@ -54,3 +52,21 @@ def query_as_dataframe(conn, query) -> DataFrame:
             rows = [list(row) for row in rowse]
 
             return DataFrame(rows, columns=cols)
+
+def cleaning_trigger_table(conn, table : str):
+    with conn:
+        with conn.cursor() as curs:
+            try:
+                # Construction de la requête : supprimer tout sauf les 20 derniers en table sql server
+                query = f"""
+                    DELETE FROM {table}
+                    WHERE time NOT IN (
+                    SELECT TOP 20 time
+                    FROM {table}
+                    ORDER BY time DESC)
+                    """
+                curs.execute(query)
+                get_run_logger().info(f"Suppression réussie dans la table {table}.")
+            except Exception as e:
+                # get_run_logger().error(e)
+                get_run_logger().error(f"Erreur SQL : {str(e)}")
